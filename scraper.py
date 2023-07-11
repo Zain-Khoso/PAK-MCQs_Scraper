@@ -6,9 +6,9 @@ from requests.exceptions import ConnectionError, HTTPError
 
 
 class Scraper:
-    def __init__(self) -> None:
-        # Starting Page URL.
-        self.current_url = "https://pakmcqs.com/category/software-engineering-mcqs/basics-of-software-engineering"
+    def __init__(self, startURL: str) -> None:
+        # URL of the page on which scraper is scraping.
+        self.current_url = startURL
 
         # State of the scraper.
         self.running = True
@@ -16,7 +16,7 @@ class Scraper:
         # List for storing Questions.
         self.DATA: list = []
 
-    def getNextURL(self):
+    def getNextURL(self) -> None:
         # Selecting the next btn
         nextBtn = self.DOM.select_one("a.next")
 
@@ -27,7 +27,7 @@ class Scraper:
             self.current_url = nextBtn.get("href")
 
     # The manager method
-    def scrape(self):
+    def scrape(self) -> list:
         # Looping through all the pages.
         while self.running:
             # Downloading the page DOM.
@@ -53,7 +53,7 @@ class Scraper:
         return self.DATA
 
     # Method to get all questions from the current page.
-    def getQuestions(self):
+    def getQuestions(self) -> None:
         """
         All the Questions with their options are stored in article tags,
         So selecting those tags from the DOM.
@@ -84,7 +84,7 @@ class Scraper:
             self.DATA.append(QUESTION)
 
     # Method to parse through the options.
-    def get_options(self, text):
+    def get_options(self, text) -> list:
         # A Constant to store all the options
         OPTIONS: list = []
 

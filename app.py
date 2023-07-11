@@ -1,35 +1,22 @@
-# Main file for this scraper.
+# app.py - __main__ file of this Scraper.
+
 # Imports
 from scraper import Scraper
-from environs import Env
-from pymongo.mongo_client import MongoClient
-from pprint import pprint
+from dbClient import Database
 
 
-# Main Function where the whole program's execution takes place.
+# main Function where the whole program's execution takes place.
 def main():
-    # Call to Scrapper.
-    BOT = Scraper()
+    # Instancing the Scraper class & then running the scraper.
+    BOT: Scraper = Scraper(
+        "https://pakmcqs.com/category/software-engineering-mcqs/basics-of-software-engineering"
+    )
     DATA: list = BOT.scrape()
 
+    # Inserting the current questions data to the Database.
+    DB = Database()
     # TODO: Remove this comment to insert the data on the cluster.
-    # database_inserter(DATA)
-
-
-def database_inserter(DATA: dict):
-    env = Env()
-    env.read_env()
-
-    username = env.str("atlas_username")
-    password = env.str("atlas_password")
-
-    client = MongoClient(
-        f"mongodb+srv://{username}:{password}@maincluster.bwozlbo.mongodb.net/?retryWrites=true&w=majority"
-    )
-
-    DB = client["pak-mcqs"]
-    COLLECTION = DB["software-engineering"]
-    COLLECTION.insert_many(DATA)
+    # DB.insert_collection("software-engineering", DATA)
 
 
 # Using this condition here as a best practice to run python scripts.
