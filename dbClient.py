@@ -10,14 +10,12 @@ class Database:
         self.ENV = Env()
         self.ENV.read_env()
 
-        username = self.ENV.str("atlas_username")
-        password = self.ENV.str("atlas_password")
+        connection_string = self.ENV.str("atlas_connection_string")
+        db_name = self.ENV.str("db_name")
 
-        client = MongoClient(
-            f"mongodb+srv://{username}:{password}@maincluster.bwozlbo.mongodb.net/?retryWrites=true&w=majority"
-        )
+        client = MongoClient(connection_string)
 
-        self.DB = client["pak-mcqs"]
+        self.DB = client[db_name]
 
     def insert_collection(self, collection_name: str, DATA: list) -> None:
         COLLECTION = self.DB[collection_name]

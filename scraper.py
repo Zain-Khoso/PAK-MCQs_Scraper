@@ -10,12 +10,18 @@ class Scraper:
         # URL of the page on which scraper is scraping.
         self.current_url = startURL
 
+        # Creating the initial DOM.
+        res = req.get(self.current_url)
+        res.raise_for_status()
+        self.DOM = BeautifulSoup(res.text, "html.parser")
+
         # State of the scraper.
         self.running = True
 
         # List for storing Questions.
         self.DATA: list = []
 
+    # Method to get the next page's URL.
     def getNextURL(self) -> None:
         # Selecting the next btn
         nextBtn = self.DOM.select_one("a.next")
@@ -44,6 +50,9 @@ class Scraper:
                 # Creating DOM.
                 self.DOM = BeautifulSoup(res.text, "html.parser")
 
+                # TODO:
+                # print(f"Started Parsing: {self.current_url}")
+
                 self.getQuestions()
 
             # Weither an error occurs or not.
@@ -60,26 +69,30 @@ class Scraper:
         """
         article_nodes = self.DOM.select("article")
 
-        for article_node in article_nodes:
+        for index, article_node in enumerate(article_nodes):
             # Dictionary to store the current question.
             QUESTION: dict = {}
 
-            # Getting the question text. And storing it inside the QUESTION dict.
-            QUESTION_TEXT: str = article_node.select_one('a[rel="bookmark"]').text
-            QUESTION.setdefault("question", QUESTION_TEXT)
+            # Trying to get the raw data from the DOM.
+            try:
+                QUESTION_TEXT: str = article_node.select_one('a[rel="bookmark"]').text
+                ANSWER_TEXT: str = article_node.select_one(
+                    "div.entry-content > p > strong"
+                ).text
+                options_text = article_node.select_one("div.entry-content > p").text
+                OPTIONS: list = self.get_options(options_text)
 
-            # Getting the correct option text. And storing it inside the QUESTION dict.
-            ANSWER_TEXT: str = article_node.select_one(
-                "div.entry-content > p > strong"
-            ).text
-            if ANSWER_TEXT[-1] == "”":
-                ANSWER_TEXT = ANSWER_TEXT[:-1]
-            QUESTION.setdefault("answer", ANSWER_TEXT)
+            # If something goes wrong then skipping this question.
+            except:
+                continue
 
-            # Getting the options. And storing them inside the QUESTION dict.
-            options_text = article_node.select_one("div.entry-content > p").text
-            OPTIONS: list = self.get_options(options_text)
-            QUESTION.setdefault("options", OPTIONS)
+            # Other wise formating the data and appending it the this questions dict.
+            else:
+                QUESTION.setdefault("question", QUESTION_TEXT)
+                if ANSWER_TEXT[-1] == "”":
+                    ANSWER_TEXT = ANSWER_TEXT[:-1]
+                QUESTION.setdefault("answer", ANSWER_TEXT)
+                QUESTION.setdefault("options", OPTIONS)
 
             self.DATA.append(QUESTION)
 
@@ -91,14 +104,14 @@ class Scraper:
         # This is the regex which parses through the options text.
         regex = re.compile(
             r"""
-                (A\. .*)                # Option: 1
-                (\n)                    # New-Line
-                (B\. .*)                # Option: 2
-                (\n)                    # New-Line
-                (C\. .*)                # Option: 3
-                (\n)                    # New-Line
-                (D\. .*)                # Option: 4
-                (\n?)                   # New-Line
+                (\s?)(A\.? .*)                  # Option: 1
+                (\s?)(\n)                       # New-Line
+                (\s?)(B\.? .*)                  # Option: 2
+                (\s?)(\n)                       # New-Line
+                (\s?)(C\.? .*)                  # Option: 3
+                (\s?)(\n)                       # New-Line
+                (\s?)(D\.? .*)                  # Option: 4
+                (\s?)(\n?)                      # New-Line
             """,
             re.VERBOSE,
         )
@@ -107,10 +120,10 @@ class Scraper:
         parsed_options = regex.search(text)
 
         # Appending the options to the OPTIONS Constant.
-        OPTIONS.append(parsed_options.group(1))
-        OPTIONS.append(parsed_options.group(3))
-        OPTIONS.append(parsed_options.group(5))
-        OPTIONS.append(parsed_options.group(7))
+        OPTIONS.append(parsed_options.group(2))
+        OPTIONS.append(parsed_options.group(6))
+        OPTIONS.append(parsed_options.group(10))
+        OPTIONS.append(parsed_options.group(14))
 
         for index, option in enumerate(OPTIONS):
             if option[-1] == "”":
